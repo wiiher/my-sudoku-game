@@ -9,13 +9,14 @@
             --primary: #3498db; --error: #e74c3c; --success: #27ae60;
             --cell-bg: #ffffff; --grid-border: #333; --highlight: #e3f2fd;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center;
             padding: 15px; min-height: 100vh;
         }
         
+        /* 標題 */
         .main-title { 
             font-size: 22px; font-weight: 900; color: #d35400; 
             margin-bottom: 15px; text-align: center; width: 100%;
@@ -23,25 +24,21 @@
 
         .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         #timer { font-size: 20px; font-weight: bold; color: var(--primary); font-family: monospace; }
-        select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; background: white; }
+        select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; background: white; font-size: 14px; }
 
-        /* 錯誤提示開關樣式 */
-        .toggle-container {
-            width: 100%; max-width: 450px; background: #fff; padding: 10px 15px;
-            border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 14px; color: #555;
+        /* 數獨主體 (RWD修復：aspect-ratio在舊Safari有Bug，改用padding-top) */
+        .sudoku-container { width: 100%; max-width: 450px; position: relative; }
+        .sudoku-pad { width: 100%; padding-top: 100%; position: relative; }
+        .sudoku-wrapper { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--grid-border); border: 2px solid var(--grid-border); 
+            display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; 
         }
-        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 22px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(18px); }
-
-        .sudoku-wrapper { width: 100%; max-width: 450px; aspect-ratio: 1 / 1; background: var(--grid-border); border: 2px solid var(--grid-border); display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; }
-        .cell { background: var(--cell-bg); display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; }
-        @media (min-width: 450px) { .cell { font-size: 26px; } }
         
+        .cell { background: var(--cell-bg); display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; }
+        @media (min-width: 450px) { .cell { font-size: 28px; } }
+        
+        /* 粗線 */
         .cell:nth-child(3n) { border-right: 2px solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
         .sudoku-wrapper > div:nth-child(n+19):nth-child(-n+27),
@@ -51,19 +48,35 @@
         .cell.selected { background: var(--highlight) !important; box-shadow: inset 0 0 0 2px var(--primary); z-index: 1; }
         .cell.wrong-flash { background: #ffdada !important; color: var(--error); animation: shake 0.3s ease-in-out; }
         
+        /* 筆記 */
         .notes-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); padding: 1px; pointer-events: none; }
         .note-num { font-size: 2.2vw; color: #95a5a6; display: flex; align-items: center; justify-content: center; }
         @media (min-width: 450px) { .note-num { font-size: 10px; } }
 
+        /* 行動鍵盤 */
         .number-pad { width: 100%; max-width: 450px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; }
-        .num-btn { background: white; border: none; border-radius: 12px; padding: 15px 0; font-size: 22px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; }
+        .num-btn { background: white; border: none; border-radius: 12px; padding: 15px 0; font-size: 24px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .num-btn:active { background: var(--primary); color: white; transform: scale(0.9); }
-        .num-btn.tool { background: #e0e0e0; font-size: 16px; }
+        .num-btn.tool { background: #e0e0e0; font-size: 16px; color: #555; }
 
         .toolbar { margin-top:15px; display: flex; gap:12px; width:100%; max-width:450px; }
         .toolbar button { flex:1; padding:12px; border-radius:10px; border:none; color:white; font-weight:bold; font-size: 16px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
 
-        .records { width: 100%; max-width: 450px; background: rgba(255,255,255,0.7); margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 14px; display: flex; justify-content: space-around; }
+        /* 錯誤提示開關移到底部 */
+        .toggle-container {
+            width: 100%; max-width: 450px; background: #fff; padding: 12px 15px;
+            border-radius: 10px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 13px; color: #555;
+        }
+        .toggle-text { flex: 1; margin-right: 10px; line-height: 1.4; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .records { width: 100%; max-width: 450px; background: rgba(255,255,255,0.7); margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 13px; display: flex; justify-content: space-around; color: #7f8c8d; }
         
         @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(5px); } 40%, 80% { transform: translateX(-5px); } }
     </style>
@@ -71,14 +84,6 @@
 <body>
 
 <div class="main-title">數讀無廣告，漲停馬上到：Ｄ</div>
-
-<div class="toggle-container">
-    <span>⚠️ 填錯時立即提示</span>
-    <label class="switch">
-        <input type="checkbox" id="errorToggle" checked>
-        <span class="slider"></span>
-    </label>
-</div>
 
 <div class="header">
     <div id="timer">00:00</div>
@@ -89,7 +94,11 @@
     </select>
 </div>
 
-<div class="sudoku-wrapper" id="grid"></div>
+<div class="sudoku-container">
+    <div class="sudoku-pad">
+        <div class="sudoku-wrapper" id="grid"></div>
+    </div>
+</div>
 
 <div class="number-pad">
     <div class="num-btn" onclick="inputNum(1)">1</div>
@@ -107,6 +116,14 @@
 <div class="toolbar">
     <button id="noteBtn" onclick="toggleNote()" style="background:#95a5a6;">筆記：關</button>
     <button onclick="getHint()" style="background:#f39c12;">獲取提示</button>
+</div>
+
+<div class="toggle-container">
+    <span class="toggle-text">⚠️ 錯誤提示，打開了你輸入錯誤就會警示你唷！</span>
+    <label class="switch">
+        <input type="checkbox" id="errorToggle" checked>
+        <span class="slider"></span>
+    </label>
 </div>
 
 <div class="records">
@@ -179,3 +196,44 @@
 
     function inputNum(n) {
         if(selectedIdx === -1 || solution[selectedIdx] === board[selectedIdx]) return;
+        
+        const isErrorHintOn = document.getElementById('errorToggle').checked;
+        const cells = document.querySelectorAll('.cell');
+
+        if(n === 'delete') { 
+            board[selectedIdx] = 0; 
+            userNotes[selectedIdx].clear(); 
+            render();
+        } else if(isNoteMode) {
+            if(userNotes[selectedIdx].has(n)) userNotes[selectedIdx].delete(n);
+            else userNotes[selectedIdx].add(n);
+            render();
+        } else {
+            if(isErrorHintOn && n !== solution[selectedIdx]) {
+                cells[selectedIdx].classList.add('wrong-flash');
+                setTimeout(() => cells[selectedIdx].classList.remove('wrong-flash'), 400);
+            } else {
+                board[selectedIdx] = n; 
+                userNotes[selectedIdx].clear();
+                render();
+            }
+        }
+    }
+
+    function checkWin() {
+        if(board.every((v, i) => v === solution[i] && v !== 0)) {
+            clearInterval(timerInterval);
+            saveRecord(document.getElementById('diff').value, seconds);
+            setTimeout(() => alert("恭喜你過關，好聰明哦！"), 200);
+        }
+    }
+
+    function toggleNote() { isNoteMode = !isNoteMode; document.getElementById('noteBtn').innerText = `筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background = isNoteMode? '#27ae60' : '#95a5a6'; }
+    function getHint() { if(selectedIdx !== -1) { board[selectedIdx] = solution[selectedIdx]; userNotes[selectedIdx].clear(); render(); } }
+    function loadRecords() { [35, 45, 55].forEach(d => { let r = localStorage.getItem('s-best-'+d); if(r) document.getElementById('best-'+d).innerText = formatTime(parseInt(r)); }); }
+    function saveRecord(d, t) { let o = localStorage.getItem('s-best-'+d); if(!o || t < parseInt(o)) localStorage.setItem('s-best-'+d, t); }
+
+    newGame();
+</script>
+</body>
+</html>
