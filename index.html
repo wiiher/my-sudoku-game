@@ -2,89 +2,91 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>極致專業數獨 - 最終整合版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極致專業數獨 - 行動優化版</title>
     <style>
-        :root { --cell-size: 55px; --bg: #f4f7f6; --primary: #3498db; --error: #e74c3c; --fixed: #2c3e50; --success: #27ae60; --note: #7f8c8d; --highlight: #e3f2fd; }
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: flex-start; padding: 40px; gap: 30px; }
+        :root {
+            --primary: #3498db; --error: #e74c3c; --success: #27ae60;
+            --cell-bg: #ffffff; --grid-border: #333; --highlight: #e3f2fd;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center;
+            padding: 10px; min-height: 100vh;
+        }
         
-        .game-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #timer { font-size: 26px; font-weight: bold; color: var(--primary); font-family: monospace; }
+        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        #timer { font-size: 20px; font-weight: bold; color: var(--primary); font-family: monospace; }
+        select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; }
+
+        /* 數獨核心：使用螢幕寬度計算大小 */
+        .sudoku-wrapper { width: 100%; max-width: 450px; aspect-ratio: 1 / 1; background: var(--grid-border); border: 2px solid var(--grid-border); display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; }
+        .cell { background: var(--cell-bg); display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; }
+        @media (min-width: 450px) { .cell { font-size: 26px; } }
         
-        #grid { display: grid; grid-template-columns: repeat(9, var(--cell-size)); border: 3px solid #333; background: #333; gap: 1px; }
-        .cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; position: relative; }
-        .cell:nth-child(3n) { border-right: 2px solid #333; }
+        /* 粗線處理 */
+        .cell:nth-child(3n) { border-right: 2px solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
-        #grid > div:nth-child(n+19):nth-child(-n+27), #grid > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 3px solid #333; }
-        
-        .cell.fixed { font-weight: 900; color: var(--fixed); background: #f0f2f5; cursor: default; }
-        .cell.selected { background: var(--highlight) !important; }
+        .sudoku-wrapper > div:nth-child(n+19):nth-child(-n+27),
+        .sudoku-wrapper > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--grid-border); }
+
+        .cell.fixed { font-weight: 900; background: #f8f9fa; color: #2c3e50; }
+        .cell.selected { background: var(--highlight) !important; outline: 2px solid var(--primary); z-index: 1; }
         .cell.wrong-flash { background: #ffdada !important; color: var(--error); animation: shake 0.2s; }
         
         /* 筆記樣式 */
-        .notes-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 2px; box-sizing: border-box; pointer-events: none; }
-        .note-num { font-size: 10px; color: var(--note); display: flex; align-items: center; justify-content: center; }
+        .notes-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); padding: 1px; pointer-events: none; }
+        .note-num { font-size: 2vw; color: #95a5a6; display: flex; align-items: center; justify-content: center; }
+        @media (min-width: 450px) { .note-num { font-size: 10px; } }
 
+        /* 手機專用數字鍵盤 */
+        .number-pad { width: 100%; max-width: 450px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; }
+        .num-btn { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px 0; font-size: 20px; font-weight: bold; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .num-btn:active { background: var(--primary); color: white; transform: scale(0.95); }
+        .num-btn.tool { background: #ecf0f1; font-size: 14px; }
+
+        /* 紀錄區 */
+        .records { width: 100%; max-width: 450px; background: white; margin-top: 15px; padding: 10px; border-radius: 10px; font-size: 13px; display: flex; justify-content: space-around; }
+        
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(3px); } 75% { transform: translateX(-3px); } }
-
-        .toolbar { margin-top: 25px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .settings-panel { margin-top: 15px; background: #f9f9f9; padding: 12px; border-radius: 10px; border: 1px solid #eee; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 8px; }
-        
-        button { padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-note { background: #95a5a6; color: white; }
-        .btn-note.active { background: var(--success); transform: scale(1.05); }
-        .btn-orange { background: #f39c12; color: white; }
-
-        .record-container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); min-width: 220px; }
-        .record-title { font-size: 18px; font-weight: bold; border-bottom: 2px solid #eee; margin-bottom: 15px; padding-bottom: 10px; }
-        .record-item { margin-bottom: 10px; display: flex; justify-content: space-between; color: #666; }
-        
-        /* Switch 開關 */
-        .switch { position: relative; width: 34px; height: 18px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: .4s; border-radius: 18px; }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background: var(--success); }
-        input:checked + .slider:before { transform: translateX(16px); }
     </style>
 </head>
 <body>
 
-<div class="game-container">
-    <div class="header">
-        <div id="timer">00:00</div>
-        <select id="diff" onchange="newGame()">
-            <option value="35">難度：簡單</option>
-            <option value="45">難度：普通</option>
-            <option value="55">難度：困難</option>
-        </select>
-    </div>
-
-    <div id="grid"></div>
-
-    <div class="settings-panel">
-        <div class="setting-item">
-            <span>⚠️ 輸入錯誤時提示</span>
-            <label class="switch"><input type="checkbox" id="errorToggle" checked><span class="slider"></span></label>
-        </div>
-    </div>
-
-    <div class="toolbar">
-        <button class="btn-blue" onclick="newGame()">新遊戲</button>
-        <button id="noteBtn" class="btn-note" onclick="toggleNote()">筆記：關</button>
-        <button class="btn-orange" onclick="getHint()">提示</button>
-    </div>
+<div class="header">
+    <div id="timer">00:00</div>
+    <select id="diff" onchange="newGame()">
+        <option value="35">難度：簡單</option>
+        <option value="45">難度：普通</option>
+        <option value="55">難度：困難</option>
+    </select>
 </div>
 
-<div class="record-container">
-    <div class="record-title">🏆 最佳紀錄</div>
-    <div class="record-item">簡單：<span id="best-35">--:--</span></div>
-    <div class="record-item">普通：<span id="best-45">--:--</span></div>
-    <div class="record-item">困難：<span id="best-55">--:--</span></div>
-    <button onclick="clearRecords()" style="width:100%; background:none; color:#ccc; border:1px solid #eee; margin-top:20px; font-size:11px;">清空紀錄</button>
+<div class="sudoku-wrapper" id="grid"></div>
+
+<div class="number-pad">
+    <div class="num-btn" onclick="inputNum(1)">1</div>
+    <div class="num-btn" onclick="inputNum(2)">2</div>
+    <div class="num-btn" onclick="inputNum(3)">3</div>
+    <div class="num-btn" onclick="inputNum(4)">4</div>
+    <div class="num-btn" onclick="inputNum(5)">5</div>
+    <div class="num-btn" onclick="inputNum(6)">6</div>
+    <div class="num-btn" onclick="inputNum(7)">7</div>
+    <div class="num-btn" onclick="inputNum(8)">8</div>
+    <div class="num-btn" onclick="inputNum(9)">9</div>
+    <div class="num-btn tool" onclick="inputNum('delete')">清除</div>
+</div>
+
+<div class="toolbar" style="margin-top:15px; display: flex; gap:10px; width:100%; max-width:450px;">
+    <button id="noteBtn" onclick="toggleNote()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#95a5a6; color:white; font-weight:bold;">筆記：關</button>
+    <button onclick="getHint()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#f39c12; color:white; font-weight:bold;">提示</button>
+</div>
+
+<div class="records" id="records-box">
+    <span>簡單: <b id="best-35">--</b></span>
+    <span>普通: <b id="best-45">--</b></span>
+    <span>困難: <b id="best-55">--</b></span>
 </div>
 
 <script>
@@ -92,35 +94,28 @@
         isNoteMode = false, selectedIdx = -1, seconds = 0, timerInterval;
 
     function formatTime(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
-    function updateTimer() { seconds++; document.getElementById('timer').innerText = formatTime(seconds); }
-
-    function loadRecords() {
-        [35, 45, 55].forEach(d => {
-            let r = localStorage.getItem('sudoku-best-' + d);
-            if(r) document.getElementById('best-' + d).innerText = formatTime(parseInt(r));
-        });
-    }
 
     function newGame() {
-        clearInterval(timerInterval); seconds = 0; timerInterval = setInterval(updateTimer, 1000);
-        board = Array(81).fill(0); solve(board); solution = [...board];
+        clearInterval(timerInterval); seconds = 0; timerInterval = setInterval(() => { seconds++; document.getElementById('timer').innerText = formatTime(seconds); }, 1000);
+        board = Array(81).fill(0); 
+        // 快速生成
+        (function solve(b) {
+            for(let i=0; i<81; i++) {
+                if(b[i] === 0) {
+                    let nums = [1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+                    for(let n of nums) { if(isValid(b, i, n)) { b[i]=n; if(solve(b)) return true; b[i]=0; } }
+                    return false;
+                }
+            } return true;
+        })(board);
+        solution = [...board];
         let diff = parseInt(document.getElementById('diff').value);
         let removed = 0; while(removed < diff) {
             let r = Math.floor(Math.random()*81);
             if(board[r] !== 0) { board[r] = 0; removed++; }
         }
         userNotes = Array.from({length: 81}, () => new Set());
-        render();
-    }
-
-    function solve(b) {
-        for(let i=0; i<81; i++) {
-            if(b[i] === 0) {
-                let nums = [1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
-                for(let n of nums) { if(isValid(b, i, n)) { b[i]=n; if(solve(b)) return true; b[i]=0; } }
-                return false;
-            }
-        } return true;
+        selectedIdx = -1; render(); loadRecords();
     }
 
     function isValid(b, idx, n) {
@@ -137,69 +132,44 @@
             const el = document.createElement('div');
             el.className = `cell ${val!==0 && solution[i]===val ? 'fixed' : ''}`;
             if(i === selectedIdx) el.classList.add('selected');
-            
-            if(val !== 0) {
-                el.innerText = val;
-            } else {
-                const noteGrid = document.createElement('div'); noteGrid.className = 'notes-grid';
+            if(val !== 0) el.innerText = val;
+            else {
+                const nGrid = document.createElement('div'); nGrid.className = 'notes-grid';
                 for(let n=1; n<=9; n++) {
-                    const span = document.createElement('div'); span.className = 'note-num';
-                    if(userNotes[i].has(n)) span.innerText = n;
-                    noteGrid.appendChild(span);
+                    const s = document.createElement('div'); s.className = 'note-num';
+                    if(userNotes[i].has(n)) s.innerText = n;
+                    nGrid.appendChild(s);
                 }
-                el.appendChild(noteGrid);
+                el.appendChild(nGrid);
             }
-            el.onclick = () => { selectedIdx = i; render(); };
+            el.onclick = (e) => { e.stopPropagation(); selectedIdx = i; render(); };
             grid.appendChild(el);
         });
-        checkWin();
-    }
-
-    window.onkeydown = (e) => {
-        if(selectedIdx === -1 || solution[selectedIdx] === board[selectedIdx]) return;
-        if(e.key >= 1 && e.key <= 9) {
-            let n = parseInt(e.key);
-            if(isNoteMode) {
-                if(userNotes[selectedIdx].has(n)) userNotes[selectedIdx].delete(n);
-                else userNotes[selectedIdx].add(n);
-            } else {
-                if(document.getElementById('errorToggle').checked && n !== solution[selectedIdx]) {
-                    const cells = document.querySelectorAll('.cell');
-                    cells[selectedIdx].classList.add('wrong-flash');
-                    setTimeout(() => cells[selectedIdx].classList.remove('wrong-flash'), 500);
-                    return;
-                }
-                board[selectedIdx] = n;
-                userNotes[selectedIdx].clear();
-            }
-            render();
-        } else if(e.key === 'Backspace') {
-            board[selectedIdx] = 0; userNotes[selectedIdx].clear(); render();
-        }
-    };
-
-    function checkWin() {
-        if(board.every((val, i) => val === solution[i])) {
+        if(board.every((v, i) => v === solution[i])) {
             clearInterval(timerInterval);
-            let diff = document.getElementById('diff').value;
-            let oldBest = localStorage.getItem('sudoku-best-'+diff);
-            if(!oldBest || seconds < parseInt(oldBest)) localStorage.setItem('sudoku-best-'+diff, seconds);
-            loadRecords();
-            setTimeout(() => alert(`恭喜你過關，好聰明哦！\n時間：${formatTime(seconds)}`), 200);
+            saveRecord(document.getElementById('diff').value, seconds);
+            setTimeout(() => alert("恭喜你過關，好聰明哦！"), 200);
         }
     }
 
-    function toggleNote() { 
-        isNoteMode = !isNoteMode; 
-        const btn = document.getElementById('noteBtn');
-        btn.innerText = `筆記：${isNoteMode?'開':'關'}`;
-        btn.classList.toggle('active');
+    function inputNum(n) {
+        if(selectedIdx === -1 || solution[selectedIdx] === board[selectedIdx]) return;
+        if(n === 'delete') { board[selectedIdx] = 0; userNotes[selectedIdx].clear(); }
+        else if(isNoteMode) {
+            if(userNotes[selectedIdx].has(n)) userNotes[selectedIdx].delete(n);
+            else userNotes[selectedIdx].add(n);
+        } else {
+            board[selectedIdx] = n; userNotes[selectedIdx].clear();
+        }
+        render();
     }
-    
-    function getHint() { if(selectedIdx !== -1) { board[selectedIdx] = solution[selectedIdx]; render(); } }
-    function clearRecords() { if(confirm('重置紀錄？')) { localStorage.clear(); location.reload(); } }
 
-    loadRecords(); newGame();
+    function toggleNote() { isNoteMode = !isNoteMode; document.getElementById('noteBtn').innerText = `筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background = isNoteMode? '#27ae60' : '#95a5a6'; }
+    function getHint() { if(selectedIdx !== -1) { board[selectedIdx] = solution[selectedIdx]; render(); } }
+    function loadRecords() { [35, 45, 55].forEach(d => { let r = localStorage.getItem('s-best-'+d); if(r) document.getElementById('best-'+d).innerText = formatTime(parseInt(r)); }); }
+    function saveRecord(d, t) { let o = localStorage.getItem('s-best-'+d); if(!o || t < parseInt(o)) localStorage.setItem('s-best-'+d, t); }
+
+    newGame();
 </script>
 </body>
 </html>
