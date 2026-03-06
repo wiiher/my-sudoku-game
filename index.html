@@ -23,7 +23,6 @@
         .cell:nth-child(9n) { border-right: none; }
         .sudoku-container > div:nth-child(n+19):nth-child(-n+27), .sudoku-container > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--grid-border); }
         
-        /* 樣式公平性：玩家填入均為細體，題目為粗體灰底 */
         .cell.fixed { font-weight: 900; background: #f0f0f0; color: #000; }
         .cell.selected { background: #e3f2fd; outline: 2px solid var(--primary); z-index: 1; }
         .cell.wrong-flash { background: #ffdada !important; animation: shake 0.3s; }
@@ -46,7 +45,9 @@
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(18px); }
         
-        .records { width: 100%; max-width: 450px; background: #fff; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .records { width: 100%; max-width: 450px; background: #fff; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #555; }
+        .loading-text { grid-column: span 2; text-align: center; color: var(--primary); font-weight: bold; }
+        
         @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(5px);} 75%{transform:translateX(-5px);} }
     </style>
 </head>
@@ -83,9 +84,14 @@
     <label class="switch"><input type="checkbox" id="errorToggle" checked><span class="slider"></span></label>
 </div>
 
-<div class="records" id="recordsDisplay"></div>
+<div class="records" id="recordsDisplay">
+    <div class="loading-text">雲端資料連線中...</div>
+</div>
 
 <script>
+    // 您的專屬雲端資料庫 API
+    const API_URL = "https://script.google.com/macros/s/AKfycbzb2hKnqIaQ2OGHTTftTNgU1yO9HEgioQAOobUUMFO49QFkYt__OMZmnEeK84k3GkJLfA/exec";
+
     let board=[], originalBoard=[], solution=[], userNotes=[], isNoteMode=false, selectedIdx=-1, seconds=0, timerInterval, errorCount=0;
     
     function saveName(){ localStorage.setItem('sudoku-player', document.getElementById('userName').value); }
@@ -174,33 +180,13 @@
     
     function checkWin(){
         if(board.every((v,i)=>v===solution[i]&&v!==0)){
-            clearInterval(timerInterval); saveRecord(document.getElementById('diff').value,seconds);
-            let name=document.getElementById('userName').value||'匿名';
-            setTimeout(()=>alert(`${name} 恭喜過關，漲停馬上到！`),200);
+            clearInterval(timerInterval); 
+            let name=document.getElementById('userName').value||'無名股神';
+            saveRecord(document.getElementById('diff').value, seconds, name);
+            setTimeout(()=>alert(`${name} 恭喜過關，成績已上傳雲端，祝您持股漲停馬上到！`), 200);
         }
     }
     
     function formatTime(s){ return Math.floor(s/60).toString().padStart(2,'0')+":"+(s%60).toString().padStart(2,'0'); }
     function toggleNote(){ isNoteMode=!isNoteMode; document.getElementById('noteBtn').innerText=`筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background=isNoteMode?'#27ae60':'#95a5a6'; }
-    function getHint(){ if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){board[selectedIdx]=solution[selectedIdx]; userNotes[selectedIdx].clear(); render();} }
-    
-    function loadRecords(){
-        const display=document.getElementById('recordsDisplay'); display.innerHTML='';
-        [35,45,55,65].forEach(d=>{
-            let data=JSON.parse(localStorage.getItem('best-'+d));
-            let label=d==35?'簡單':d==45?'普通':d==55?'困難':'地獄';
-            display.innerHTML+=`<span>${label}: ${data?data.name+' '+formatTime(data.time):'--'}</span>`;
-        });
-    }
-    
-    function saveRecord(d,t){
-        let name=document.getElementById('userName').value||'玩家';
-        let old=JSON.parse(localStorage.getItem('best-'+d));
-        if(!old||t<old.time) localStorage.setItem('best-'+d,JSON.stringify({name,time:t}));
-        loadRecords();
-    }
-    
-    loadName(); newGame();
-</script>
-</body>
-</html>
+    function getHint(){ if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){board[selectedIdx]=solution[selectedIdx]; userNotes
