@@ -15,7 +15,6 @@
         #lives { font-size: 14px; color: var(--error); font-weight: bold; }
         input.user-name, select { padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; background: white; }
         
-        /* 終極防護網格結構：保證絕對正方形，不依賴 aspect-ratio */
         .sudoku-container { width: 100%; max-width: 450px; margin-bottom: 5px; }
         .sudoku-pad { width: 100%; padding-top: 100%; position: relative; background: var(--grid-border); border: 2px solid var(--grid-border); }
         .sudoku-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); gap: 1px; }
@@ -23,12 +22,10 @@
         .cell { background: #fff; display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; color: #333; }
         @media(min-width:450px){ .cell{ font-size: 26px; } }
         
-        /* 粗實線佈局 */
         .cell:nth-child(3n) { border-right: 2px solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
         .sudoku-wrapper > div:nth-child(n+19):nth-child(-n+27), .sudoku-wrapper > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--grid-border); }
         
-        /* 樣式公平性 */
         .cell.fixed { font-weight: 900; background: #f0f0f0; color: #000; }
         .cell.selected { background: #e3f2fd; outline: 2px solid var(--primary); z-index: 1; }
         .cell.wrong-flash { background: #ffdada !important; animation: shake 0.3s; }
@@ -51,8 +48,15 @@
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(18px); }
         
-        .records { width: 100%; max-width: 450px; background: #fff; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #555; }
-        .loading-text { grid-column: span 2; text-align: center; color: var(--primary); font-weight: bold; padding: 5px 0; }
+        /* 英雄榜新樣式 */
+        .records-wrapper { width: 100%; max-width: 450px; background: #fff; margin-top: 12px; padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .records-title { text-align: center; font-weight: 900; color: var(--primary); margin-bottom: 12px; font-size: 15px; letter-spacing: 1px; }
+        .records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .diff-group { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #eee; }
+        .diff-title { font-weight: bold; color: #333; margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; font-size: 13px; text-align: center; }
+        .record-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11px; color: #555; }
+        .record-item span.time { font-family: monospace; font-weight: bold; color: #d35400; font-size: 12px; }
+        .loading-text { text-align: center; color: var(--primary); font-weight: bold; padding: 10px 0; font-size: 13px; }
         
         @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(5px);} 75%{transform:translateX(-5px);} }
     </style>
@@ -94,8 +98,11 @@
     <label class="switch"><input type="checkbox" id="errorToggle" checked><span class="slider"></span></label>
 </div>
 
-<div class="records" id="recordsDisplay">
-    <div class="loading-text">雲端資料連線中...</div>
+<div class="records-wrapper">
+    <div class="records-title">🏆 漲停股神排行榜 🏆</div>
+    <div class="records-grid" id="recordsDisplay">
+        <div class="loading-text">雲端資料連線中...</div>
+    </div>
 </div>
 
 <script>
@@ -104,7 +111,6 @@
 
     let board=[], originalBoard=[], solution=[], userNotes=[], isNoteMode=false, selectedIdx=-1, seconds=0, timerInterval, errorCount=0;
     
-    // 加上保險絲：防止因隱私模式無法讀寫 localStorage 導致全機崩潰
     function saveName(){ 
         try { localStorage.setItem('sudoku-player', document.getElementById('userName').value); } 
         catch(e) { console.log("隱私模式不支援本機儲存"); } 
@@ -208,28 +214,44 @@
     function toggleNote(){ isNoteMode=!isNoteMode; document.getElementById('noteBtn').innerText=`筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background=isNoteMode?'#27ae60':'#95a5a6'; }
     function getHint(){ if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){board[selectedIdx]=solution[selectedIdx]; userNotes[selectedIdx].clear(); render();} }
     
+    // 讀取前三名排行榜邏輯
     function loadRecords(){
         const display=document.getElementById('recordsDisplay'); 
-        display.innerHTML='<div class="loading-text">雲端資料同步中...</div>';
+        display.innerHTML='<div class="loading-text" style="grid-column: span 2;">🏆 榜單同步中...</div>';
         
         fetch(API_URL)
             .then(res => res.json())
             .then(data => {
                 display.innerHTML='';
-                [35,45,55,65].forEach(d=>{
-                    let record = data[String(d)];
-                    let label=d==35?'簡單':d==45?'普通':d==55?'困難':'地獄';
-                    display.innerHTML+=`<span>${label}: ${record ? record.name+' '+formatTime(record.time) : '尚無紀錄'}</span>`;
+                const diffLabels = {"35":"簡單", "45":"普通", "55":"困難", "65":"地獄 🔥"};
+                const medals = ['🥇', '🥈', '🥉'];
+                
+                [35,45,55,65].forEach(d => {
+                    let records = data[String(d)] || [];
+                    let html = `<div class="diff-group"><div class="diff-title">${diffLabels[d]}</div>`;
+                    
+                    if(records.length === 0) {
+                        html += `<div class="record-item" style="justify-content:center;">虛位以待</div>`;
+                    } else {
+                        records.forEach((r, idx) => {
+                            html += `<div class="record-item">
+                                <span>${medals[idx]} ${r.name} <span style="font-size:9px;color:#999;">(${r.date})</span></span>
+                                <span class="time">${formatTime(r.time)}</span>
+                            </div>`;
+                        });
+                    }
+                    html += `</div>`;
+                    display.innerHTML += html;
                 });
             })
             .catch(err => {
-                display.innerHTML='<div class="loading-text" style="color:#e74c3c;">雲端連線失敗，請檢查網路</div>';
+                display.innerHTML='<div class="loading-text" style="color:#e74c3c; grid-column: span 2;">雲端連線失敗，請檢查網路</div>';
             });
     }
     
     function saveRecord(d, t, name){
         const display=document.getElementById('recordsDisplay');
-        display.innerHTML='<div class="loading-text">成績上傳中...</div>';
+        display.innerHTML='<div class="loading-text" style="grid-column: span 2;">🚀 成績上傳中...</div>';
         
         fetch(API_URL, {
             method: 'POST',
@@ -240,7 +262,6 @@
         .catch(err => console.error("上傳失敗", err));
     }
     
-    // 安全啟動遊戲
     loadName(); 
     newGame();
 </script>
