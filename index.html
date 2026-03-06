@@ -38,7 +38,7 @@
         .num-btn:active { background: var(--primary); color: white; }
         
         .toolbar { margin-top:12px; display: flex; gap:10px; width:100%; max-width:450px; }
-        .toolbar button { flex:1; padding:10px; border-radius:8px; border:none; color:white; font-weight:bold; font-size: 15px; cursor: pointer;}
+        .toolbar button { flex:1; padding:10px; border-radius:8px; border:none; color:white; font-weight:bold; font-size: 15px; cursor: pointer; transition: background 0.3s;}
         
         .toggle-container { width: 100%; max-width: 450px; background: #fff; padding: 12px; border-radius: 8px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
@@ -48,7 +48,6 @@
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(18px); }
         
-        /* 英雄榜新樣式 */
         .records-wrapper { width: 100%; max-width: 450px; background: #fff; margin-top: 12px; padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .records-title { text-align: center; font-weight: 900; color: var(--primary); margin-bottom: 12px; font-size: 15px; letter-spacing: 1px; }
         .records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -90,26 +89,30 @@
 
 <div class="toolbar">
     <button id="noteBtn" onclick="toggleNote()" style="background:#95a5a6;">筆記：關</button>
-    <button onclick="getHint()" style="background:#f39c12;">獲取提示</button>
+    <button id="hintBtn" onclick="getHint()" style="background:#f39c12;">獲取提示</button>
 </div>
 
 <div class="toggle-container">
     <span style="flex:1; margin-right:5px;">⚠️ 錯誤提示，打開了你輸入錯誤就會警示你唷！</span>
-    <label class="switch"><input type="checkbox" id="errorToggle" checked><span class="slider"></span></label>
+    <label class="switch"><input type="checkbox" id="errorToggle" onclick="handleToggleClick(event)"><span class="slider"></span></label>
 </div>
 
 <div class="records-wrapper">
     <div class="records-title">🏆 漲停股神排行榜 🏆</div>
     <div class="records-grid" id="recordsDisplay">
-        <div class="loading-text">雲端資料連線中...</div>
+        <div class="loading-text" style="grid-column: span 2;">雲端資料連線中...</div>
     </div>
 </div>
 
 <script>
-    // 您的專屬雲端資料庫 API
     const API_URL = "https://script.google.com/macros/s/AKfycbzb2hKnqIaQ2OGHTTftTNgU1yO9HEgioQAOobUUMFO49QFkYt__OMZmnEeK84k3GkJLfA/exec";
 
+    // 新增風控變數
     let board=[], originalBoard=[], solution=[], userNotes=[], isNoteMode=false, selectedIdx=-1, seconds=0, timerInterval, errorCount=0;
+    let hasStarted = false;         // 記錄是否已填入第一格
+    let isDisqualified = false;     // 記錄是否失去進入排行榜資格
+    let isHintCooldown = false;     // 提示冷卻狀態
+    let hintTimer = null;           // 提示倒數計時器
     
     function saveName(){ 
         try { localStorage.setItem('sudoku-player', document.getElementById('userName').value); } 
@@ -123,6 +126,13 @@
     function newGame() {
         clearInterval(timerInterval); seconds=0; errorCount=0;
         document.getElementById('timer').innerText="00:00"; document.getElementById('lives').innerText="";
+        
+        // 重置風控機制
+        hasStarted = false;
+        isDisqualified = false;
+        document.getElementById('errorToggle').checked = false; // 預設強制關閉
+        resetHintCooldown();
+
         timerInterval = setInterval(()=>{ seconds++; document.getElementById('timer').innerText=formatTime(seconds); }, 1000);
         
         let fullBoard=Array(81).fill(0);
@@ -176,8 +186,29 @@
         checkWin();
     }
     
+    // 防弊機制：監聽錯誤開關點擊
+    function handleToggleClick(e) {
+        if (hasStarted) {
+            if (e.target.checked) { // 遊戲開始後試圖打開
+                e.preventDefault();
+                e.target.checked = false; // 強制關回
+                alert("若要打開提醒請重新開始前打開，打開就不能進入排行榜唷");
+            }
+        }
+    }
+
     function inputNum(n){
         if(selectedIdx===-1||originalBoard[selectedIdx]!==0)return;
+
+        // 判定第一格填入，遊戲正式開始
+        if(!hasStarted) {
+            hasStarted = true;
+            // 如果一開始就作弊開著提示，取消排行榜資格
+            if(document.getElementById('errorToggle').checked) {
+                isDisqualified = true;
+            }
+        }
+
         const isErrorHintOn=document.getElementById('errorToggle').checked;
         const isHellMode=document.getElementById('diff').value==="65";
         
@@ -204,17 +235,63 @@
     function checkWin(){
         if(board.every((v,i)=>v===solution[i]&&v!==0)){
             clearInterval(timerInterval); 
-            let name=document.getElementById('userName').value||'無名股神';
-            saveRecord(document.getElementById('diff').value, seconds, name);
-            setTimeout(()=>alert(`${name} 恭喜過關，成績已上傳雲端，祝您持股漲停馬上到！`), 200);
+            
+            // 姓名防呆機制
+            let name = document.getElementById('userName').value.trim();
+            if (name === "") name = "這個笨蛋忘了打名字";
+
+            if (!isDisqualified) {
+                // 有資格者上傳成績
+                saveRecord(document.getElementById('diff').value, seconds, name);
+                setTimeout(()=>alert(`${name} 恭喜過關，成績已上傳雲端，祝您持股漲停馬上到！`), 200);
+            } else {
+                // 作弊者僅顯示通關
+                setTimeout(()=>alert(`${name} 恭喜過關！\n(本次因開啟錯誤提示，成績不列入排行榜)`), 200);
+            }
         }
     }
     
     function formatTime(s){ return Math.floor(s/60).toString().padStart(2,'0')+":"+(s%60).toString().padStart(2,'0'); }
     function toggleNote(){ isNoteMode=!isNoteMode; document.getElementById('noteBtn').innerText=`筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background=isNoteMode?'#27ae60':'#95a5a6'; }
-    function getHint(){ if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){board[selectedIdx]=solution[selectedIdx]; userNotes[selectedIdx].clear(); render();} }
     
-    // 讀取前三名排行榜邏輯
+    // 提示按鈕冷卻機制
+    function getHint(){ 
+        if(isHintCooldown) return; // 冷卻中忽略點擊
+
+        if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){
+            board[selectedIdx]=solution[selectedIdx]; 
+            userNotes[selectedIdx].clear(); 
+            render();
+
+            // 觸發 10 秒冷卻
+            isHintCooldown = true;
+            let btn = document.getElementById('hintBtn');
+            let cd = 10;
+            btn.style.background = '#7f8c8d';
+            btn.innerText = `冷卻中 (${cd}s)`;
+
+            hintTimer = setInterval(() => {
+                cd--;
+                if(cd <= 0) {
+                    resetHintCooldown();
+                } else {
+                    btn.innerText = `冷卻中 (${cd}s)`;
+                }
+            }, 1000);
+        } 
+    }
+
+    // 重置冷卻
+    function resetHintCooldown() {
+        if(hintTimer) clearInterval(hintTimer);
+        isHintCooldown = false;
+        let btn = document.getElementById('hintBtn');
+        if(btn) {
+            btn.style.background = '#f39c12';
+            btn.innerText = '獲取提示';
+        }
+    }
+    
     function loadRecords(){
         const display=document.getElementById('recordsDisplay'); 
         display.innerHTML='<div class="loading-text" style="grid-column: span 2;">🏆 榜單同步中...</div>';
@@ -262,8 +339,15 @@
         .catch(err => console.error("上傳失敗", err));
     }
     
-    loadName(); 
-    newGame();
+    // 網頁載入時跳出重要通知，再啟動遊戲
+    window.onload = function() {
+        setTimeout(() => {
+            alert("1.記得要打上名字，不然排行榜會認不出來唷\n2.關閉錯誤提示才可以進入排行榜喔。");
+        }, 100);
+        loadName(); 
+        newGame();
+    };
+
 </script>
 </body>
 </html>
