@@ -7,22 +7,28 @@
     <style>
         :root { --primary: #3498db; --error: #e74c3c; --success: #27ae60; --grid-border: #333; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
         .main-title { font-size: 22px; font-weight: 900; color: #d35400; margin-bottom: 10px; text-align: center; }
-        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         #timer { font-size: 18px; font-weight: bold; color: var(--primary); }
         #lives { font-size: 14px; color: var(--error); font-weight: bold; }
-        input.user-name, select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; background: white; }
+        input.user-name, select { padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; background: white; }
         
-        .sudoku-container { width: 100%; max-width: 450px; background: var(--grid-border); border: 2px solid var(--grid-border); display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; }
-        .cell { aspect-ratio: 1/1; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; color: #333; }
+        /* 終極防護網格結構：保證絕對正方形，不依賴 aspect-ratio */
+        .sudoku-container { width: 100%; max-width: 450px; margin-bottom: 5px; }
+        .sudoku-pad { width: 100%; padding-top: 100%; position: relative; background: var(--grid-border); border: 2px solid var(--grid-border); }
+        .sudoku-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); gap: 1px; }
+        
+        .cell { background: #fff; display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; color: #333; }
         @media(min-width:450px){ .cell{ font-size: 26px; } }
         
+        /* 粗實線佈局 */
         .cell:nth-child(3n) { border-right: 2px solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
-        .sudoku-container > div:nth-child(n+19):nth-child(-n+27), .sudoku-container > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--grid-border); }
+        .sudoku-wrapper > div:nth-child(n+19):nth-child(-n+27), .sudoku-wrapper > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--grid-border); }
         
+        /* 樣式公平性 */
         .cell.fixed { font-weight: 900; background: #f0f0f0; color: #000; }
         .cell.selected { background: #e3f2fd; outline: 2px solid var(--primary); z-index: 1; }
         .cell.wrong-flash { background: #ffdada !important; animation: shake 0.3s; }
@@ -30,12 +36,12 @@
         .notes-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
         .note-num { font-size: 10px; color: #95a5a6; display: flex; align-items: center; justify-content: center; }
         
-        .number-pad { width: 100%; max-width: 450px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; }
+        .number-pad { width: 100%; max-width: 450px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
         .num-btn { background: white; border: none; border-radius: 8px; padding: 12px 0; font-size: 22px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
         .num-btn:active { background: var(--primary); color: white; }
         
         .toolbar { margin-top:12px; display: flex; gap:10px; width:100%; max-width:450px; }
-        .toolbar button { flex:1; padding:10px; border-radius:8px; border:none; color:white; font-weight:bold; font-size: 15px;}
+        .toolbar button { flex:1; padding:10px; border-radius:8px; border:none; color:white; font-weight:bold; font-size: 15px; cursor: pointer;}
         
         .toggle-container { width: 100%; max-width: 450px; background: #fff; padding: 12px; border-radius: 8px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
@@ -46,7 +52,7 @@
         input:checked + .slider:before { transform: translateX(18px); }
         
         .records { width: 100%; max-width: 450px; background: #fff; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #555; }
-        .loading-text { grid-column: span 2; text-align: center; color: var(--primary); font-weight: bold; }
+        .loading-text { grid-column: span 2; text-align: center; color: var(--primary); font-weight: bold; padding: 5px 0; }
         
         @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(5px);} 75%{transform:translateX(-5px);} }
     </style>
@@ -56,7 +62,7 @@
 <div class="main-title">數讀無廣告，漲停馬上到：Ｄ</div>
 
 <div class="header">
-    <input type="text" class="user-name" id="userName" placeholder="姓名" onchange="saveName()" style="width:70px;">
+    <input type="text" class="user-name" id="userName" placeholder="姓名" onchange="saveName()" style="width:75px;">
     <div id="timer">00:00</div>
     <div id="lives"></div>
     <select id="diff" onchange="newGame()">
@@ -64,7 +70,11 @@
     </select>
 </div>
 
-<div class="sudoku-container" id="grid"></div>
+<div class="sudoku-container">
+    <div class="sudoku-pad">
+        <div class="sudoku-wrapper" id="grid"></div>
+    </div>
+</div>
 
 <div class="number-pad">
     <div class="num-btn" onclick="inputNum(1)">1</div><div class="num-btn" onclick="inputNum(2)">2</div>
@@ -94,8 +104,15 @@
 
     let board=[], originalBoard=[], solution=[], userNotes=[], isNoteMode=false, selectedIdx=-1, seconds=0, timerInterval, errorCount=0;
     
-    function saveName(){ localStorage.setItem('sudoku-player', document.getElementById('userName').value); }
-    function loadName(){ document.getElementById('userName').value = localStorage.getItem('sudoku-player') || ""; }
+    // 加上保險絲：防止因隱私模式無法讀寫 localStorage 導致全機崩潰
+    function saveName(){ 
+        try { localStorage.setItem('sudoku-player', document.getElementById('userName').value); } 
+        catch(e) { console.log("隱私模式不支援本機儲存"); } 
+    }
+    function loadName(){ 
+        try { document.getElementById('userName').value = localStorage.getItem('sudoku-player') || ""; } 
+        catch(e) { console.log("隱私模式不支援本機讀取"); } 
+    }
     
     function newGame() {
         clearInterval(timerInterval); seconds=0; errorCount=0;
@@ -189,4 +206,43 @@
     
     function formatTime(s){ return Math.floor(s/60).toString().padStart(2,'0')+":"+(s%60).toString().padStart(2,'0'); }
     function toggleNote(){ isNoteMode=!isNoteMode; document.getElementById('noteBtn').innerText=`筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background=isNoteMode?'#27ae60':'#95a5a6'; }
-    function getHint(){ if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){board[selectedIdx]=solution[selectedIdx]; userNotes
+    function getHint(){ if(selectedIdx!==-1&&originalBoard[selectedIdx]===0){board[selectedIdx]=solution[selectedIdx]; userNotes[selectedIdx].clear(); render();} }
+    
+    function loadRecords(){
+        const display=document.getElementById('recordsDisplay'); 
+        display.innerHTML='<div class="loading-text">雲端資料同步中...</div>';
+        
+        fetch(API_URL)
+            .then(res => res.json())
+            .then(data => {
+                display.innerHTML='';
+                [35,45,55,65].forEach(d=>{
+                    let record = data[String(d)];
+                    let label=d==35?'簡單':d==45?'普通':d==55?'困難':'地獄';
+                    display.innerHTML+=`<span>${label}: ${record ? record.name+' '+formatTime(record.time) : '尚無紀錄'}</span>`;
+                });
+            })
+            .catch(err => {
+                display.innerHTML='<div class="loading-text" style="color:#e74c3c;">雲端連線失敗，請檢查網路</div>';
+            });
+    }
+    
+    function saveRecord(d, t, name){
+        const display=document.getElementById('recordsDisplay');
+        display.innerHTML='<div class="loading-text">成績上傳中...</div>';
+        
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ name: name, diff: d, time: t })
+        })
+        .then(() => loadRecords()) 
+        .catch(err => console.error("上傳失敗", err));
+    }
+    
+    // 安全啟動遊戲
+    loadName(); 
+    newGame();
+</script>
+</body>
+</html>
