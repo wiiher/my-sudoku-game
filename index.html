@@ -8,25 +8,23 @@
         :root {
             --primary: #3498db; --error: #e74c3c; --success: #27ae60;
             --cell-bg: #ffffff; --grid-border: #333; --highlight: #e3f2fd;
+            --fixed-bg: #f0f0f0; --user-text: #2980b9;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center;
-            padding: 15px; min-height: 100vh;
+            padding: 10px; min-height: 100vh;
         }
         
-        /* 標題 */
-        .main-title { 
-            font-size: 22px; font-weight: 900; color: #d35400; 
-            margin-bottom: 15px; text-align: center; width: 100%;
-        }
+        .main-title { font-size: 22px; font-weight: 900; color: #d35400; margin-bottom: 10px; text-align: center; }
 
-        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        #timer { font-size: 20px; font-weight: bold; color: var(--primary); font-family: monospace; }
-        select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; background: white; font-size: 14px; }
+        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        #timer { font-size: 18px; font-weight: bold; color: var(--primary); font-family: monospace; }
+        #lives { font-size: 14px; color: var(--error); font-weight: bold; }
+        select, input.user-name { padding: 5px; border-radius: 5px; border: 1px solid #ccc; background: white; font-size: 13px; }
+        input.user-name { width: 80px; }
 
-        /* 數獨主體 (RWD修復：aspect-ratio在舊Safari有Bug，改用padding-top) */
         .sudoku-container { width: 100%; max-width: 450px; position: relative; }
         .sudoku-pad { width: 100%; padding-top: 100%; position: relative; }
         .sudoku-wrapper { 
@@ -35,50 +33,46 @@
             display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; 
         }
         
-        .cell { background: var(--cell-bg); display: flex; align-items: center; justify-content: center; font-size: 6vw; cursor: pointer; position: relative; }
-        @media (min-width: 450px) { .cell { font-size: 28px; } }
+        .cell { background: var(--cell-bg); display: flex; align-items: center; justify-content: center; font-size: 6.5vw; cursor: pointer; position: relative; color: #333; font-weight: normal; }
+        @media (min-width: 450px) { .cell { font-size: 30px; } }
         
-        /* 粗線 */
+        /* 原始題目樣式：粗體且有底色 */
+        .cell.fixed { font-weight: 900 !important; background: var(--fixed-bg); color: #000; }
+        
         .cell:nth-child(3n) { border-right: 2px solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
         .sudoku-wrapper > div:nth-child(n+19):nth-child(-n+27),
         .sudoku-wrapper > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--grid-border); }
 
-        .cell.fixed { font-weight: 900; background: #f8f9fa; color: #2c3e50; }
         .cell.selected { background: var(--highlight) !important; box-shadow: inset 0 0 0 2px var(--primary); z-index: 1; }
-        .cell.wrong-flash { background: #ffdada !important; color: var(--error); animation: shake 0.3s ease-in-out; }
+        .cell.wrong-flash { background: #ffdada !important; animation: shake 0.3s ease-in-out; }
         
-        /* 筆記 */
-        .notes-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); padding: 1px; pointer-events: none; }
-        .note-num { font-size: 2.2vw; color: #95a5a6; display: flex; align-items: center; justify-content: center; }
-        @media (min-width: 450px) { .note-num { font-size: 10px; } }
+        .notes-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
+        .note-num { font-size: 2vw; color: #95a5a6; display: flex; align-items: center; justify-content: center; }
 
-        /* 行動鍵盤 */
-        .number-pad { width: 100%; max-width: 450px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; }
-        .num-btn { background: white; border: none; border-radius: 12px; padding: 15px 0; font-size: 24px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .num-btn:active { background: var(--primary); color: white; transform: scale(0.9); }
-        .num-btn.tool { background: #e0e0e0; font-size: 16px; color: #555; }
+        .number-pad { width: 100%; max-width: 450px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+        .num-btn { background: white; border: none; border-radius: 10px; padding: 12px 0; font-size: 22px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .num-btn:active { background: var(--primary); color: white; }
+        .num-btn.tool { background: #e0e0e0; font-size: 14px; }
 
-        .toolbar { margin-top:15px; display: flex; gap:12px; width:100%; max-width:450px; }
-        .toolbar button { flex:1; padding:12px; border-radius:10px; border:none; color:white; font-weight:bold; font-size: 16px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+        .toolbar { margin-top:12px; display: flex; gap:10px; width:100%; max-width:450px; }
+        .toolbar button { flex:1; padding: 10px; border-radius:8px; border:none; color:white; font-weight:bold; }
 
-        /* 錯誤提示開關移到底部 */
         .toggle-container {
-            width: 100%; max-width: 450px; background: #fff; padding: 12px 15px;
-            border-radius: 10px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 13px; color: #555;
+            width: 100%; max-width: 450px; background: #fff; padding: 10px;
+            border-radius: 10px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 12px;
         }
-        .toggle-text { flex: 1; margin-right: 10px; line-height: 1.4; }
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 18px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked + .slider:before { transform: translateX(16px); }
 
-        .records { width: 100%; max-width: 450px; background: rgba(255,255,255,0.7); margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 13px; display: flex; justify-content: space-around; color: #7f8c8d; }
+        .records { width: 100%; max-width: 450px; background: #fff; margin-top: 10px; padding: 10px; border-radius: 10px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
         
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(5px); } 40%, 80% { transform: translateX(-5px); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(4px); } 40%, 80% { transform: translateX(-4px); } }
     </style>
 </head>
 <body>
@@ -86,18 +80,19 @@
 <div class="main-title">數讀無廣告，漲停馬上到：Ｄ</div>
 
 <div class="header">
+    <input type="text" class="user-name" id="userName" placeholder="輸入名字" onchange="saveName()">
     <div id="timer">00:00</div>
+    <div id="lives"></div>
     <select id="diff" onchange="newGame()">
-        <option value="35">難度：簡單</option>
-        <option value="45">難度：普通</option>
-        <option value="55">難度：困難</option>
+        <option value="35">簡單</option>
+        <option value="45">普通</option>
+        <option value="55">困難</option>
+        <option value="65">地獄 🔥</option>
     </select>
 </div>
 
 <div class="sudoku-container">
-    <div class="sudoku-pad">
-        <div class="sudoku-wrapper" id="grid"></div>
-    </div>
+    <div class="sudoku-pad"><div class="sudoku-wrapper" id="grid"></div></div>
 </div>
 
 <div class="number-pad">
@@ -119,31 +114,29 @@
 </div>
 
 <div class="toggle-container">
-    <span class="toggle-text">⚠️ 錯誤提示，打開了你輸入錯誤就會警示你唷！</span>
+    <span style="flex:1; margin-right:5px;">⚠️ 錯誤提示，打開了你輸入錯誤就會警示你唷！</span>
     <label class="switch">
         <input type="checkbox" id="errorToggle" checked>
         <span class="slider"></span>
     </label>
 </div>
 
-<div class="records">
-    <span>簡單: <b id="best-35">--</b></span>
-    <span>普通: <b id="best-45">--</b></span>
-    <span>困難: <b id="best-55">--</b></span>
-</div>
+<div class="records" id="recordsDisplay"></div>
 
 <script>
-    let board = [], solution = [], userNotes = Array.from({length: 81}, () => new Set()), 
-        isNoteMode = false, selectedIdx = -1, seconds = 0, timerInterval;
+    let board = [], originalBoard = [], solution = [], userNotes = Array.from({length: 81}, () => new Set()), 
+        isNoteMode = false, selectedIdx = -1, seconds = 0, timerInterval, errorCount = 0;
 
-    function formatTime(s) { return Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0'); }
+    function saveName() { localStorage.setItem('sudoku-player', document.getElementById('userName').value); }
+    function loadName() { document.getElementById('userName').value = localStorage.getItem('sudoku-player') || ""; }
 
     function newGame() {
-        clearInterval(timerInterval); seconds = 0; 
+        clearInterval(timerInterval); seconds = 0; errorCount = 0;
         document.getElementById('timer').innerText = "00:00";
+        document.getElementById('lives').innerText = "";
         timerInterval = setInterval(() => { seconds++; document.getElementById('timer').innerText = formatTime(seconds); }, 1000);
         
-        board = Array(81).fill(0); 
+        let fullBoard = Array(81).fill(0);
         (function solve(b) {
             for(let i=0; i<81; i++) {
                 if(b[i] === 0) {
@@ -152,14 +145,17 @@
                     return false;
                 }
             } return true;
-        })(board);
-        solution = [...board];
+        })(fullBoard);
+        solution = [...fullBoard];
         
         let diff = parseInt(document.getElementById('diff').value);
-        let removed = 0; while(removed < diff) {
+        board = [...fullBoard];
+        let removed = 0;
+        while(removed < diff) {
             let r = Math.floor(Math.random()*81);
             if(board[r] !== 0) { board[r] = 0; removed++; }
         }
+        originalBoard = [...board]; // 記錄哪些是原始題目
         userNotes = Array.from({length: 81}, () => new Set());
         selectedIdx = -1; render(); loadRecords();
     }
@@ -176,10 +172,13 @@
         const grid = document.getElementById('grid'); grid.innerHTML = '';
         board.forEach((val, i) => {
             const el = document.createElement('div');
-            el.className = `cell ${val!==0 && solution[i]===val ? 'fixed' : ''}`;
+            el.className = 'cell';
+            if(originalBoard[i] !== 0) el.classList.add('fixed'); // 只有原題才鎖定
             if(i === selectedIdx) el.classList.add('selected');
-            if(val !== 0) el.innerText = val;
-            else {
+            
+            if(val !== 0) {
+                el.innerText = val;
+            } else {
                 const nGrid = document.createElement('div'); nGrid.className = 'notes-grid';
                 for(let n=1; n<=9; n++) {
                     const s = document.createElement('div'); s.className = 'note-num';
@@ -188,51 +187,78 @@
                 }
                 el.appendChild(nGrid);
             }
-            el.onclick = (e) => { e.stopPropagation(); selectedIdx = i; render(); };
+            el.onclick = () => { selectedIdx = i; render(); };
             grid.appendChild(el);
         });
         checkWin();
     }
 
     function inputNum(n) {
-        if(selectedIdx === -1 || solution[selectedIdx] === board[selectedIdx]) return;
+        if(selectedIdx === -1 || originalBoard[selectedIdx] !== 0) return;
         
         const isErrorHintOn = document.getElementById('errorToggle').checked;
-        const cells = document.querySelectorAll('.cell');
+        const isHellMode = document.getElementById('diff').value == "65";
 
-        if(n === 'delete') { 
-            board[selectedIdx] = 0; 
-            userNotes[selectedIdx].clear(); 
-            render();
+        if(n === 'delete') {
+            board[selectedIdx] = 0;
+            userNotes[selectedIdx].clear();
         } else if(isNoteMode) {
-            if(userNotes[selectedIdx].has(n)) userNotes[selectedIdx].delete(n);
-            else userNotes[selectedIdx].add(n);
-            render();
+            userNotes[selectedIdx].has(n) ? userNotes[selectedIdx].delete(n) : userNotes[selectedIdx].add(n);
         } else {
-            if(isErrorHintOn && n !== solution[selectedIdx]) {
+            // 關鍵：即使輸入錯誤，也要能填入，除非開啟提示或地獄模式
+            if((isErrorHintOn || isHellMode) && n !== solution[selectedIdx]) {
+                errorCount++;
+                const cells = document.querySelectorAll('.cell');
                 cells[selectedIdx].classList.add('wrong-flash');
                 setTimeout(() => cells[selectedIdx].classList.remove('wrong-flash'), 400);
-            } else {
-                board[selectedIdx] = n; 
-                userNotes[selectedIdx].clear();
-                render();
+
+                if(isHellMode) {
+                    if(errorCount === 1) alert("還有兩次機會唷");
+                    else if(errorCount === 2) alert("還剩下一次機會唷");
+                    else if(errorCount >= 3) {
+                        alert("你掉進地獄囉，請重新開始。");
+                        newGame();
+                        return;
+                    }
+                    document.getElementById('lives').innerText = `❤️ 剩餘次數: ${3-errorCount}`;
+                }
+                if(isErrorHintOn) return; // 警示模式下不給填入錯誤答案
             }
+            // 正常填入（正確或警示關閉時的錯誤）
+            board[selectedIdx] = n;
+            userNotes[selectedIdx].clear();
         }
+        render();
     }
 
     function checkWin() {
         if(board.every((v, i) => v === solution[i] && v !== 0)) {
             clearInterval(timerInterval);
             saveRecord(document.getElementById('diff').value, seconds);
-            setTimeout(() => alert("恭喜你過關，好聰明哦！"), 200);
+            setTimeout(() => alert(`${document.getElementById('userName').value || '匿名'} 恭喜過關！`), 200);
         }
     }
 
-    function toggleNote() { isNoteMode = !isNoteMode; document.getElementById('noteBtn').innerText = `筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background = isNoteMode? '#27ae60' : '#95a5a6'; }
-    function getHint() { if(selectedIdx !== -1) { board[selectedIdx] = solution[selectedIdx]; userNotes[selectedIdx].clear(); render(); } }
-    function loadRecords() { [35, 45, 55].forEach(d => { let r = localStorage.getItem('s-best-'+d); if(r) document.getElementById('best-'+d).innerText = formatTime(parseInt(r)); }); }
-    function saveRecord(d, t) { let o = localStorage.getItem('s-best-'+d); if(!o || t < parseInt(o)) localStorage.setItem('s-best-'+d, t); }
+    function formatTime(s) { return Math.floor(s/60).toString().padStart(2,'0')+":"+(s%60).toString().padStart(2,'0'); }
+    function toggleNote() { isNoteMode = !isNoteMode; document.getElementById('noteBtn').innerText = `筆記：${isNoteMode?'開':'關'}`; document.getElementById('noteBtn').style.background = isNoteMode?'#27ae60':'#95a5a6'; }
+    function getHint() { if(selectedIdx !== -1 && originalBoard[selectedIdx] === 0) { board[selectedIdx] = solution[selectedIdx]; userNotes[selectedIdx].clear(); render(); } }
+    
+    function loadRecords() {
+        const display = document.getElementById('recordsDisplay');
+        display.innerHTML = '';
+        [35, 45, 55, 65].forEach(d => {
+            let data = JSON.parse(localStorage.getItem('best-'+d) || 'null');
+            let label = d==35?'簡單':d==45?'普通':d==55?'困難':'地獄';
+            display.innerHTML += `<span>${label}: ${data ? data.name+' '+formatTime(data.time) : '--'}</span>`;
+        });
+    }
+    function saveRecord(d, t) {
+        let name = document.getElementById('userName').value || '匿名';
+        let old = JSON.parse(localStorage.getItem('best-'+d) || 'null');
+        if(!old || t < old.time) localStorage.setItem('best-'+d, JSON.stringify({name, time: t}));
+    }
 
+    loadName();
     newGame();
 </script>
 </body>
